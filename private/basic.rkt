@@ -5,6 +5,8 @@
 ;; is not user facing: directed and undirected graph structures encapsulate
 ;; this data.
 
+(require "pipe.rkt")
+
 (struct exn:fail:basic-graph-link exn:fail ())
 
 (define-type Node  (Setof Integer))
@@ -73,6 +75,12 @@
               (format "invalid source (~a) or target (~a)" source target)
               (current-continuation-marks))))))
 
+(: basic-graph-add-undirected-link (-> Basic-Graph Integer Integer Basic-Graph))
+(define (basic-graph-add-undirected-link graph node1 node2)
+  (:-> graph
+       (basic-graph-add-link node1 node2)
+       (basic-graph-add-link node2 node1)))
+
 (: basic-graph-remove-link (-> Basic-Graph Integer Integer Basic-Graph))
 (define (basic-graph-remove-link graph source target)
   (if (basic-graph-has-link? graph source target)
@@ -96,7 +104,7 @@
   ;; Note: As none of the data types or functions herein are user facing, the
   ;; tests are of implementation details and may be removed if broken.
 
-  (require typed/rackunit "pipe.rkt")
+  (require typed/rackunit)
 
   (check-true (basic-graph-empty? empty-basic-graph))
   (check-equal? (basic-graph-node-count empty-basic-graph) 0)
@@ -104,7 +112,6 @@
   (check-false (basic-graph-has-node? empty-basic-graph 0))
   (check-false (basic-graph-has-link? empty-basic-graph 0 1))
   (check-false (basic-graph-has-undirected-link? empty-basic-graph 0 1))
-
 
   (let ([graph (:-> empty-basic-graph
                     (basic-graph-add-node)
@@ -143,4 +150,10 @@
       (check-equal? (basic-graph-link-count graph) 1)
       (check-false (basic-graph-has-node? graph 1))
       (check-false (basic-graph-has-link? graph 0 1))
-      (check-false (basic-graph-has-link? graph 1 0)))))
+      (check-false (basic-graph-has-link? graph 1 0))))
+
+  (let ([graph (:-> empty-basic-graph
+                    (basic-graph-add-node)
+                    (basic-graph-add-node)
+                    (basic-graph-add-undirected-link 0 1))])
+    (check-true (basic-graph-has-undirected-link? graph 0 1))))
